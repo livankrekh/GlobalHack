@@ -3,6 +3,8 @@ import numpy as np
 from numpy import ones,vstack
 from numpy.linalg import lstsq
 
+pair_color = np.random.randint(0,255,(100,3))
+
 def is_vertical(line, frame):
 	h, w, _ = frame.shape
 
@@ -14,7 +16,6 @@ def get_clean_contours(frame):
 	gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 	_, bw = cv.threshold(gray, 50, 150, cv.THRESH_BINARY | cv.THRESH_OTSU)
 	bw = cv.GaussianBlur(bw, (3,3), 0);
-	# edges = cv.Canny(bw, 100, 200)
 	im, contours, _ = cv.findContours(bw, cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
 	for i, c in enumerate(contours):
 		area = cv.contourArea(c);
@@ -23,7 +24,30 @@ def get_clean_contours(frame):
 
 		new_contours.append(c)
 
-	cv.imshow("Gray", im)
+	return new_contours
+
+def get_edges(frame):
+	new_contours = []
+
+	gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+	_, bw = cv.threshold(gray, 100, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+	bw = cv.GaussianBlur(bw, (3,3), 0);
+	bw = cv.equalizeHist(bw);
+	bw = cv.Canny(bw, 120, 255)
+	im, contours, _ = cv.findContours(bw, cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
+	for i, c in enumerate(contours):
+		area = cv.contourArea(c);
+		if area < 1e2 or 1e5 < area:
+			continue
+
+		x,y,w,h = cv.boundingRect(c)
+
+		if (w*h < 5000):
+			continue
+
+		new_contours.append(c)
+
+	cv.imshow("Edges", im)
 
 	return new_contours
 
@@ -46,7 +70,7 @@ def slice_contours(contours, line):
 		current_x = int((cX - b) / a)
 		x,y,w,h = cv.boundingRect(c)
 
-		if (w*h < 2000):
+		if (w*h < 4000):
 			continue
 
 		if (cX < current_x):
@@ -60,12 +84,35 @@ def analyze_symmetry(frame, line_x, line_y, mean):
 	h, w, _ = frame.shape
 	overlay = frame.copy()
 	alpha = 0.5
+	compare = []
 
-	if (abs(line_x[0][0] - line_x[1][0]) <= 5 or abs(line_y[0][0] - line_y[1][0]) <= 5):
-		cv.line(overlay, (mean[0], 0), (mean[0], h), (255, 255, 255), 15)
-		cv.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
-		cv.putText(frame, "Vertical symmetry was found!", (10,30), cv.FONT_HERSHEY_TRIPLEX, 1.0, (0, 127, 0))
-		return True
+	contours = get_edges(frame)
+
+	for i, cont1 in enumerate(contours):
+		for j, cont2 in enumerate(contours):
+			if (i == j):
+				continue
+
+			ret = cv.matchShapes(cont1, cont2, 1, 0.0)
+			
+			if (ret < 0.01 ):
+				compare.append((cont1, cont2))
+				break
+
+	for i, pair in enumerate(compare):
+		# topmost0 = tuple(pair[0][pair[0][:,:,1].argmin()][0])
+		# bottommost0 = tuple(pair[0][pair[0][:,:,1].argmax()][0])
+		# topmost1 = tuple(pair[1][pair[1][:,:,1].argmin()][0])
+		# bottommost1 = tuple(pair[1][pair[1][:,:,1].argmax()][0])
+
+		# cv.line(frame, (int(abs(topmost0[0] - topmost1[0]) / 2), topmost0[1]), (int(abs(bottommost0[0])), ), )
+		cv.drawContours(frame, pair, -1, pair_color[i].tolist(), 3);
+
+	# if (abs(line_x[0][0] - line_x[1][0]) <= 5 or abs(line_y[0][0] - line_y[1][0]) <= 5):
+	# 	cv.line(overlay, (mean[0], 0), (mean[0], h), (255, 255, 255), 15)
+	# 	cv.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+	# 	cv.putText(frame, "Vertical symmetry was found!", (10,30), cv.FONT_HERSHEY_TRIPLEX, 1.0, (0, 127, 0))
+	# 	return True
 
 	return False
 

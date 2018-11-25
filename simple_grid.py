@@ -34,10 +34,19 @@ def getOrientationFromArr(data_pts, img):
     mean, eigenvectors, eigenvalues = cv.PCACompute2(data_pts, mean)
     cntr = (int(mean[0,0]), int(mean[0,1]))
     
+    if (cntr[0] < 0 or cntr[1] < 0):
+        cntr = (0, 0)
     
     cv.circle(img, cntr, 3, (255, 0, 255), 2)
     p1 = (cntr[0] + 0.02 * eigenvectors[0,0] * eigenvalues[0,0], cntr[1] + 0.02 * eigenvectors[0,1] * eigenvalues[0,0])
-    p2 = (cntr[0] - 0.02 * eigenvectors[1,0] * eigenvalues[1,0], cntr[1] - 0.02 * eigenvectors[1,1] * eigenvalues[1,0])
+    p2 = (cntr[0] - 0.02 * (eigenvectors[1,0] if (len(eigenvectors) >= 2) else 1) ** 2, cntr[1] - 0.02 * (eigenvectors[1,1] if (len(eigenvectors) >= 2 and len(eigenvectors[1]) >= 2) else 1) * (eigenvalues[1,0] if (len(eigenvectors) >= 2) else 1))
+
+    if (p1[0] < 0 or p1[1] < 0):
+        p1 = (0, 0)
+
+    if (p2[0] < 0 or p2[1] < 0):
+        p2 = (0, 0)
+
     line_x = drawAxis(img, cntr, p1, (0, 255, 0), 1)
     line_y = drawAxis(img, cntr, p2, (255, 255, 0), 5)
     angle = atan2(eigenvectors[0,1], eigenvectors[0,0]) # orientation in radians
@@ -58,7 +67,7 @@ def getOrientation(pts, img):
     
     cv.circle(img, cntr, 3, (255, 0, 255), 2)
     p1 = (cntr[0] + 0.02 * eigenvectors[0,0] * eigenvalues[0,0], cntr[1] + 0.02 * eigenvectors[0,1] * eigenvalues[0,0])
-    p2 = (cntr[0] - 0.02 * eigenvectors[1,0] if () else () * eigenvalues[1,0], cntr[1] - 0.02 * eigenvectors[1,1] * eigenvalues[1,0])
+    p2 = (cntr[0] - 0.02 * (eigenvectors[1,0] if (len(eigenvectors) >= 2) else 1) ** 2, cntr[1] - 0.02 * (eigenvectors[1,1] if (len(eigenvectors) >= 2 and len(eigenvectors[1]) >= 2) else 1) * (eigenvalues[1,0] if (len(eigenvectors) >= 2) else 1))
     drawAxis(img, cntr, p1, (0, 255, 0), 1)
     drawAxis(img, cntr, p2, (255, 255, 0), 5)
     angle = atan2(eigenvectors[0,1], eigenvectors[0,0]) # orientation in radians
@@ -105,10 +114,15 @@ if __name__ == "__main__":
         points_arr = get_points(old, frame)
         pointed = frame.copy()
 
-        # for i, elem in enumerate(points_arr):
-        #     x,y = elem.ravel()
+        for i, elem in enumerate(points_arr):
+            x,y = elem.ravel()
 
-        #     cv.circle(pointed, (x,y), 5, point_color[i].tolist(), -1)
+            if (x < 0 or y < 0):
+                points_arr[i][0] = 0
+                points_arr[i][1] = 0
+                continue
+
+            cv.circle(pointed, (x,y), 5, point_color[i].tolist(), -1)
 
         # End calculating
 
@@ -125,7 +139,7 @@ if __name__ == "__main__":
         old = frame.copy()
         status, frame = cap.read()
 
-        k = cv.waitKey(1000) & 0xff
+        k = cv.waitKey(30) & 0xff
         if k == 27:
             break
 

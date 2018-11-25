@@ -42,7 +42,7 @@ def getOrientationFromArr(data_pts, img):
     line_y = drawAxis(img, cntr, p2, (255, 255, 0), 5)
     angle = atan2(eigenvectors[0,1], eigenvectors[0,0]) # orientation in radians
     print(p1, p2)
-    return angle, line_x, line_y
+    return angle, line_x, line_y, cntr
  
 def getOrientation(pts, img):
     
@@ -104,21 +104,21 @@ if __name__ == "__main__":
     while (status):
         # Main points location calculating
         points_arr = get_points(old, frame)
+        pointed = frame.copy()
 
         for i, elem in enumerate(points_arr):
             x,y = elem.ravel()
 
-            pointed = cv.circle(frame, (x,y), 5, point_color[i].tolist(), -1)
+            cv.circle(pointed, (x,y), 5, point_color[i].tolist(), -1)
 
         # End calculating
 
-        angle, line_x, line_y = getOrientationFromArr(points_arr, pointed)
-        cv.line(pointed, (int(width / 2) + int(height * sin(angle)),0), (int(width / 2), int(height)), (255,0,0, 100), 7)
+        angle, line_x, line_y, mean = getOrientationFromArr(points_arr, pointed)
+        # cv.line(pointed, (int(width / 2) + int(height * sin(angle)),0), (int(width / 2), int(height)), (255,0,0, 100), 7)
 
-        compare = analyze_vertical([(int(width / 2) + int(height * sin(angle)),0), (int(width / 2), int(height))], frame)
-
-        for i, pair in enumerate(compare):
-            cv.drawContours(pointed, pair, -1, (0, 0, 255), 2);
+        analyze_standart(pointed, mean, line_x, line_y, angle)
+        analyze_dinamic_symmetry(pointed, line_x, line_y)
+        # compare = analyze_symmetry([(int(width / 2) + int(height * sin(angle)),0), (int(width / 2), int(height))], frame)
 
         cv.imshow('pointed', pointed)
         old = frame.copy()

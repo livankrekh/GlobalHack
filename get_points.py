@@ -43,7 +43,7 @@ def get_next_points(old_frame, new_frame, start_points=[], clean=False):
 
 	if (p_arr == None and start_points != []):
 		p_arr = start_points[:]
-	else:
+	elif (p_arr == None or start_points != []):
 		return []
 
 	p_new, st, err = cv.calcOpticalFlowPyrLK(old_gray, new_gray, p_arr, None, **lk_params)

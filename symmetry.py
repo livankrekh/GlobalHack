@@ -12,14 +12,18 @@ def get_clean_contours(frame):
 	new_contours = []
 
 	gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-	_, bw = cv.threshold(gray, 50, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
-	_, contours, _ = cv.findContours(bw, cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
+	_, bw = cv.threshold(gray, 50, 150, cv.THRESH_BINARY | cv.THRESH_OTSU)
+	bw = cv.GaussianBlur(bw, (3,3), 0);
+	# edges = cv.Canny(bw, 100, 200)
+	im, contours, _ = cv.findContours(bw, cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
 	for i, c in enumerate(contours):
 		area = cv.contourArea(c);
 		if area < 1e2 or 1e5 < area:
 			continue
 
 		new_contours.append(c)
+
+	cv.imshow("Gray", im)
 
 	return new_contours
 
@@ -52,23 +56,18 @@ def slice_contours(contours, line):
 
 	return left,right
 
-def analyze_symmetry(line, frame):
-	compare = []
-	lines = []
+def analyze_symmetry(frame, line_x, line_y, mean):
+	h, w, _ = frame.shape
+	overlay = frame.copy()
+	alpha = 0.5
 
-	contours = get_clean_contours(frame)
+	if (abs(line_x[0][0] - line_x[1][0]) <= 5 or abs(line_y[0][0] - line_y[1][0]) <= 5):
+		cv.line(overlay, (mean[0], 0), (mean[0], h), (255, 255, 255), 15)
+		cv.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+		cv.putText(frame, "Vertical symmetry was found!", (10,30), cv.FONT_HERSHEY_TRIPLEX, 1.0, (0, 127, 0))
+		return True
 
-	left, right = slice_contours(contours, line)
-
-	for left_c in left:
-		for right_c in right:
-			ret = cv.matchShapes(left_c, right_c, 1, 0.0)
-
-			if (ret < 0.2):
-				compare.append((left_c, right_c))
-				break
-
-	return compare
+	return False
 
 def show_standart_grid(frame):
 	h, w, _ = frame.shape
@@ -80,7 +79,7 @@ def show_standart_grid(frame):
 	cv.line(overlay, (0, int(h / 3)), (w, int(h / 3)), (255, 255, 255), 15)
 	cv.line(overlay, (0, int(h / 3 * 2)), (w, int(h / 3 * 2)), (255, 255, 255), 15)
 
-	cv.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame);
+	cv.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
 def get_correct_line(line_x, line_y):
 	d_x = np.sqrt( (line_x[1][0] - line_x[0][0]) ** 2 + (line_x[1][1] - line_x[0][1]) ** 2 )
@@ -156,7 +155,7 @@ def analyze_dinamic_symmetry(frame, line_x, line_y):
 
 			an_sin2 = abs((line_cp[0][0] - line_cp[1][0]) / np.sqrt( (line_cp[0][0] - line_cp[1][0]) ** 2 + (line_cp[0][1] - line_cp[1][1]) ** 2 ) )
 
-			if ( abs(an_sin - an_sin2) <= 0.06 ):
+			if ( abs(an_sin - an_sin2) <= 0.04 ):
 				if (same == []):
 					same.append(line)
 				
@@ -175,6 +174,7 @@ def analyze_dinamic_symmetry(frame, line_x, line_y):
 			cv.line(overlay, line[0], line[1], (255,255,255), 15)
 
 		cv.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+		cv.putText(frame, "Dynamic symmetry was found!", (10,30), cv.FONT_HERSHEY_TRIPLEX, 1.0, (0, 127, 0))
 		return True
 
 	return False

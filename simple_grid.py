@@ -56,10 +56,9 @@ def getOrientation(pts, img):
     mean, eigenvectors, eigenvalues = cv.PCACompute2(data_pts, mean)
     cntr = (int(mean[0,0]), int(mean[0,1]))
     
-    
     cv.circle(img, cntr, 3, (255, 0, 255), 2)
     p1 = (cntr[0] + 0.02 * eigenvectors[0,0] * eigenvalues[0,0], cntr[1] + 0.02 * eigenvectors[0,1] * eigenvalues[0,0])
-    p2 = (cntr[0] - 0.02 * eigenvectors[1,0] * eigenvalues[1,0], cntr[1] - 0.02 * eigenvectors[1,1] * eigenvalues[1,0])
+    p2 = (cntr[0] - 0.02 * eigenvectors[1,0] if () else () * eigenvalues[1,0], cntr[1] - 0.02 * eigenvectors[1,1] * eigenvalues[1,0])
     drawAxis(img, cntr, p1, (0, 255, 0), 1)
     drawAxis(img, cntr, p2, (255, 255, 0), 5)
     angle = atan2(eigenvectors[0,1], eigenvectors[0,0]) # orientation in radians
@@ -106,19 +105,21 @@ if __name__ == "__main__":
         points_arr = get_points(old, frame)
         pointed = frame.copy()
 
-        for i, elem in enumerate(points_arr):
-            x,y = elem.ravel()
+        # for i, elem in enumerate(points_arr):
+        #     x,y = elem.ravel()
 
-            cv.circle(pointed, (x,y), 5, point_color[i].tolist(), -1)
+        #     cv.circle(pointed, (x,y), 5, point_color[i].tolist(), -1)
 
         # End calculating
 
         angle, line_x, line_y, mean = getOrientationFromArr(points_arr, pointed)
-        # cv.line(pointed, (int(width / 2) + int(height * sin(angle)),0), (int(width / 2), int(height)), (255,0,0, 100), 7)
 
-        analyze_standart(pointed, mean, line_x, line_y, angle)
-        analyze_dinamic_symmetry(pointed, line_x, line_y)
-        # compare = analyze_symmetry([(int(width / 2) + int(height * sin(angle)),0), (int(width / 2), int(height))], frame)
+        if ("--standart" in sys.argv):
+            analyze_standart(pointed, mean, line_x, line_y, angle)
+        if ("--dynamic-symmetry" in sys.argv):
+            analyze_dinamic_symmetry(pointed, line_x, line_y)
+        if ("--symmetry" in sys.argv):
+            analyze_symmetry(pointed, line_x, line_y, mean)
 
         cv.imshow('pointed', pointed)
         old = frame.copy()

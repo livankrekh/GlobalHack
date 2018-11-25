@@ -1,11 +1,11 @@
 from __future__ import print_function
 from __future__ import division
+from src.stitch_api import *
+from src.get_points import *
+from src.symmetry import *
+from math import atan2, cos, sin, sqrt, pi
 import cv2 as cv
 import numpy as np
-from math import atan2, cos, sin, sqrt, pi
-from stitch_api import *
-from get_points import *
-from symmetry import *
 import sys
 
 def drawAxis(img, p_, q_, colour, scale):

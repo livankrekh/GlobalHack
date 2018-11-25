@@ -122,7 +122,7 @@ if __name__ == "__main__":
                 points_arr[i][1] = 0
                 continue
 
-            cv.circle(pointed, (x,y), 5, point_color[i].tolist(), -1)
+            # cv.circle(pointed, (x,y), 5, point_color[i].tolist(), -1)
 
         # End calculating
 

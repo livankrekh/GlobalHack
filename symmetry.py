@@ -47,8 +47,6 @@ def get_edges(frame):
 
 		new_contours.append(c)
 
-	cv.imshow("Edges", im)
-
 	return new_contours
 
 def slice_contours(contours, line):
@@ -95,18 +93,23 @@ def analyze_symmetry(frame, line_x, line_y, mean):
 
 			ret = cv.matchShapes(cont1, cont2, 1, 0.0)
 			
-			if (ret < 0.01 ):
+			if (ret < 0.03 ):
 				compare.append((cont1, cont2))
 				break
 
 	for i, pair in enumerate(compare):
-		# topmost0 = tuple(pair[0][pair[0][:,:,1].argmin()][0])
-		# bottommost0 = tuple(pair[0][pair[0][:,:,1].argmax()][0])
-		# topmost1 = tuple(pair[1][pair[1][:,:,1].argmin()][0])
-		# bottommost1 = tuple(pair[1][pair[1][:,:,1].argmax()][0])
+		topmost0 = tuple(pair[0][pair[0][:,:,1].argmin()][0])
+		bottommost0 = tuple(pair[0][pair[0][:,:,1].argmax()][0])
+		topmost1 = tuple(pair[1][pair[1][:,:,1].argmin()][0])
+		bottommost1 = tuple(pair[1][pair[1][:,:,1].argmax()][0])
 
-		# cv.line(frame, (int(abs(topmost0[0] - topmost1[0]) / 2), topmost0[1]), (int(abs(bottommost0[0])), ), )
-		cv.drawContours(frame, pair, -1, pair_color[i].tolist(), 3);
+		topLeft = (topmost0 if (topmost0[0] < topmost1[0]) else topmost1)
+		topRight = (topmost0 if (topmost0[0] >= topmost1[0]) else topmost1)
+		bottomLeft = (bottommost0 if (bottommost0[0] < bottommost0[0]) else bottommost1)
+		bottomRight = (bottommost0 if (bottommost0[0] >= bottommost0[0]) else bottommost1)
+ 
+		cv.line(frame, (topLeft[0] + int((topRight[0] - topLeft[0]) / 2), topLeft[1]), ( bottomLeft[0] + int((bottomRight[0] - bottomLeft[0]) / 2), bottomLeft[1]), (0,0,255), 5)
+		# cv.drawContours(frame, pair, -1, pair_color[i].tolist(), 3);
 
 	# if (abs(line_x[0][0] - line_x[1][0]) <= 5 or abs(line_y[0][0] - line_y[1][0]) <= 5):
 	# 	cv.line(overlay, (mean[0], 0), (mean[0], h), (255, 255, 255), 15)
@@ -202,7 +205,7 @@ def analyze_dinamic_symmetry(frame, line_x, line_y):
 
 			an_sin2 = abs((line_cp[0][0] - line_cp[1][0]) / np.sqrt( (line_cp[0][0] - line_cp[1][0]) ** 2 + (line_cp[0][1] - line_cp[1][1]) ** 2 ) )
 
-			if ( abs(an_sin - an_sin2) <= 0.04 ):
+			if ( abs(an_sin - an_sin2) <= 0.01 ):
 				if (same == []):
 					same.append(line)
 				
